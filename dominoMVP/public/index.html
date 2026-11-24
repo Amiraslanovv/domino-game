@@ -1,44 +1,63 @@
 <!doctype html>
 <html lang="az"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Domino</title>
 <style>
+:root{--u:34px}
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:#0d3b2e;color:#eee}
 button,input,select{font:inherit;padding:8px 12px;border-radius:8px;border:0}
-button{background:#e8b923;color:#222;cursor:pointer;font-weight:600}button:disabled{opacity:.4}
+button{background:#e8b923;color:#222;cursor:pointer;font-weight:600}button:disabled{opacity:.4}button.on{background:#3ddc84}
 #lobby{max-width:360px;margin:15vh auto;display:grid;gap:10px;padding:16px}
-#game{display:none;height:100vh;grid-template-columns:1fr 280px}
+#game{display:none;height:100vh;grid-template-columns:1fr 290px}
 #main{display:flex;flex-direction:column;padding:8px;gap:8px;overflow:auto}
 #side{display:flex;flex-direction:column;gap:6px;background:#0a2a21;padding:8px;min-height:0}
-#chat{flex:1;overflow:auto;font-size:14px}#chat b{color:#e8b923}
+#chat{flex:1;overflow:auto;font-size:14px;min-height:80px}#chat b{color:#e8b923}#chat .big{font-size:36px;line-height:1.1}
+.row{display:flex;gap:4px;flex-wrap:wrap}.row button{padding:4px 8px;font-size:12px;font-weight:500;background:#17493a;color:#eee}
 .seats{display:flex;gap:8px;flex-wrap:wrap}
-.seat{background:#0a2a21;border-radius:10px;padding:6px;width:150px;text-align:center;border:2px solid transparent;font-size:13px}
-.seat.turn{border-color:#e8b923}
+.seat{position:relative;background:#0a2a21;border-radius:10px;padding:6px;width:150px;text-align:center;border:2px solid transparent;font-size:13px}
+.seat.tA{background:#173a63}.seat.tB{background:#612424}.seat.turn{border-color:#e8b923;box-shadow:0 0 12px #e8b92988}
 .seat video{width:100%;height:90px;object-fit:cover;background:#000;border-radius:6px}
-#board{flex:1;min-height:140px;display:flex;flex-wrap:wrap;align-content:flex-start;gap:3px;background:#116149;border-radius:12px;padding:10px;overflow:auto;align-items:center}
-.t{display:inline-flex;background:#f6f1e3;border-radius:6px;border:1px solid #666}
-.h{width:30px;height:30px;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:3px}
-.h i{border-radius:50%}.h i.on{background:#222}
-.t .h:first-child{border-right:2px solid #555}
-.t.d{flex-direction:column}.t.d .h:first-child{border-right:0;border-bottom:2px solid #555}
-.t.back{width:44px;height:30px;background:#2a6;cursor:pointer}
-#hand{display:flex;gap:6px;flex-wrap:wrap;min-height:64px}
-#hand .t{cursor:pointer;opacity:.55}#hand .t.ok{opacity:1;outline:3px solid #e8b923}
+.fl{position:absolute;left:50%;top:10px;font-size:48px;pointer-events:none;animation:fl 2s forwards}
+@keyframes fl{from{transform:translate(-50%,0)}to{transform:translate(-50%,-90px) scale(1.6);opacity:0}}
+#board{flex:1;min-height:150px;display:flex;flex-wrap:wrap;align-content:flex-start;justify-content:center;gap:4px;background:radial-gradient(#157a5c,#0f5a44);border-radius:14px;padding:12px;overflow:auto;align-items:center;--u:28px}
+#board.shake{animation:shk .35s}
+@keyframes shk{20%{transform:translate(-5px,3px)}40%{transform:translate(5px,-3px)}60%{transform:translate(-3px,-2px)}80%{transform:translate(3px,2px)}}
+.t{width:calc(var(--u)*2);height:var(--u);flex:none;filter:drop-shadow(0 2px 2px #0008)}.t.v{width:var(--u);height:calc(var(--u)*2)}
+.drop{animation:drop .3s ease-out}@keyframes drop{from{transform:translateY(-40px) scale(1.3);opacity:0}}
+.slam{animation:slam .45s ease-out}@keyframes slam{0%{transform:scale(2.6);opacity:0}55%{transform:scale(.88)}75%{transform:scale(1.08)}100%{transform:scale(1)}}
+#hand{display:flex;gap:6px;flex-wrap:wrap;min-height:calc(var(--u) + 24px);align-items:flex-end;padding-top:10px;--u:34px}
+#hand .t{cursor:pointer;filter:brightness(.62) drop-shadow(0 2px 2px #0008);transition:transform .15s}
+#hand .t.ok{filter:drop-shadow(0 0 6px #e8b923);transform:translateY(-8px)}
+.deal{animation:deal .5s backwards}@keyframes deal{from{transform:translateY(120px) rotate(20deg);opacity:0}}
+.back{width:46px;height:30px;border-radius:5px;border:1px solid #0b4;cursor:pointer;background:repeating-linear-gradient(45deg,#1d8f6a,#1d8f6a 4px,#16795a 4px,#16795a 8px)}
 #ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-@media(max-width:800px){#game{grid-template-columns:1fr;height:auto}#side{height:240px}.seat{width:calc(50% - 4px);font-size:12px}.seat video{height:70px}.h{width:24px;height:24px;padding:2px}.t.back{width:36px;height:24px}#board{min-height:110px}#hand{position:sticky;bottom:0;background:#0d3b2e;padding:6px 0;z-index:5}#lobby{margin:8vh auto}button,input,select{min-height:42px}}
+.tbl{display:grid;grid-template-columns:repeat(3,110px);grid-template-rows:repeat(3,54px);gap:6px;margin:auto}
+.sl{border-radius:10px;padding:6px;text-align:center;font-size:13px;cursor:pointer;border:2px dashed #999}.sl.A{background:#173a63}.sl.B{background:#612424}.sl.me{border:2px solid #e8b923}
+#shuf{position:fixed;inset:0;display:none;place-items:center;align-content:center;background:#000b;z-index:20;text-align:center}#shuf.show{display:grid}
+#shw{position:relative;width:200px;height:100px}
+.sb{position:absolute;left:78px;top:35px;width:44px;height:28px;border-radius:5px;border:1px solid #0b4;animation:sh .5s ease-in-out 3;background:repeating-linear-gradient(45deg,#1d8f6a,#1d8f6a 4px,#16795a 4px,#16795a 8px)}
+@keyframes sh{0%,100%{transform:translate(0,0) rotate(0)}33%{transform:translate(var(--x),var(--y)) rotate(var(--r))}66%{transform:translate(calc(var(--x)*-1),calc(var(--y)*-1)) rotate(calc(var(--r)*-1))}}
+#banner{position:fixed;left:0;right:0;top:30%;text-align:center;font-size:clamp(28px,7vw,64px);font-weight:900;color:#ffd84a;text-shadow:0 4px 18px #000;pointer-events:none;opacity:0;z-index:30;padding:0 10px}
+#banner.show{animation:bn 3s}
+@keyframes bn{0%{opacity:0;transform:scale(.3)}12%{opacity:1;transform:scale(1.15)}20%{transform:scale(1)}85%{opacity:1}100%{opacity:0;transform:scale(1.1)}}
+@media(max-width:800px){#game{grid-template-columns:1fr;height:auto}#side{height:320px}.seat{width:calc(50% - 4px);font-size:12px}.seat video{height:64px}
+#board{--u:20px;min-height:120px}#hand{--u:22px;position:sticky;bottom:0;background:#0d3b2e;padding:12px 0 6px;z-index:5}#lobby{margin:8vh auto}button,input,select{min-height:40px}}
 </style></head><body>
-<div id="lobby"><h2>🁢 Domino</h2>
-<input id="name" placeholder="Adın"><input id="room" placeholder="Otaq kodu (boş = yeni otaq)">
-<button onclick="join()">Daxil ol</button></div>
-<div id="game"><div id="main">
-<div id="top"></div><div class="seats" id="seats"></div><div id="status"></div>
-<div id="board"></div><div id="ctl"></div><div id="hand"></div></div>
-<div id="side"><button id="mic" onclick="media()">🎤📷 Səs/Video aç</button><div id="chat"></div>
+<div id="lobby"><h2>🁢 Domino</h2><input id="name" placeholder="Adın"><input id="room" placeholder="Otaq kodu (boş = yeni otaq)"><button onclick="join()">Daxil ol</button></div>
+<div id="game"><div id="main"><div id="top"></div><div class="seats" id="seats"></div><div id="status"></div><div id="board"></div><div id="ctl"></div><div id="hand"></div></div>
+<div id="side"><div class="row"><button id="mic" onclick="tog('a')" style="font-size:14px">🎤 Aç</button><button id="cam" onclick="tog('v')" style="font-size:14px">📷 Aç</button></div>
+<div id="chat"></div><div class="row" id="quick"></div><div class="row" id="stk"></div>
 <input id="msg" placeholder="Mesaj yaz..." onkeydown="if(event.key=='Enter'&&this.value){send({type:'chat',text:this.value});this.value=''}"></div></div>
+<div id="shuf"><div id="shw"></div><p>Daşlar qarışdırılır…</p></div><div id="banner"></div>
 <script>
-const $=s=>document.querySelector(s), esc=s=>String(s).replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
+const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
 const id=sessionStorage.id||(sessionStorage.id=Math.random().toString(36).slice(2,10));
 $('#name').value=localStorage.nm||'';
-let ws,S,sel=null,local=null;const pcs={},vids={},seats={};
-const send=o=>ws.send(JSON.stringify(o));
+let ws,S,sel=null,local=null,prevB=[],lastRound,lastEv,dealAnim=false,AC;const pcs={},vids={},seats={};
+const MODES={team:'101 komanda (2v2, qarşı-qarşıya)',solo:'101 fərdi'};
+const QUICK=['Əla gediş! 👏','Tez ol ⏰','Pas 😅','Şans sənindir 🍀','Hazırsan? 😎','Qoşa gəlir 💥','Yaxşı oyun 🤝'];
+const STK=['🐐','😂','🔥','💀','🤡','👑','🥶','😭','🤌','🫡'];
+$('#quick').innerHTML=QUICK.map(q=>`<button onclick="send({type:'chat',text:'${q}'})">${q}</button>`).join('');
+$('#stk').innerHTML=STK.map(q=>`<button style="font-size:20px" onclick="send({type:'chat',text:'${q}',big:1})">${q}</button>`).join('');
+const send=o=>ws.send(JSON.stringify(o)),rnd=n=>Math.round((Math.random()*2-1)*n);
 function join(){
   const name=$('#name').value.trim()||'Oyunçu',room=($('#room').value.trim()||Math.random().toString(36).slice(2,6)).toUpperCase();
   localStorage.nm=name;
@@ -46,16 +65,32 @@ function join(){
   ws.onopen=()=>send({type:'join',room,id,name});
   ws.onmessage=e=>{const d=JSON.parse(e.data);
     if(d.type=='state'){S=d;render()}
-    else if(d.type=='chat'){const p=document.createElement('div');p.innerHTML='<b>'+esc(d.name)+':</b> ';p.append(document.createTextNode(d.text));$('#chat').append(p);$('#chat').scrollTop=1e9}
+    else if(d.type=='chat'){const p=document.createElement('div');
+      if(d.big){p.className='big';p.textContent=d.text;const s=document.createElement('small');s.style.fontSize='12px';s.textContent=' '+d.name;p.append(s);floatEmoji(d.id,d.text)}
+      else{p.innerHTML='<b>'+esc(d.name)+':</b> ';p.append(document.createTextNode(d.text))}
+      $('#chat').append(p);$('#chat').scrollTop=1e9}
     else if(d.type=='rtc')rtc(d.from,d.data);
     else if(d.type=='err'){alert(d.m);location.reload()}};
   ws.onclose=()=>setTimeout(()=>S&&join(),1500);
 }
-// ---------- tiles ----------
-function pips(n){const m=[[],[4],[0,8],[0,4,8],[0,2,6,8],[0,2,4,6,8],[0,2,3,5,6,8]][n];
-  return '<div class=h>'+[...Array(9).keys()].map(k=>'<i class="'+(m.includes(k)?'on':'')+'"></i>').join('')+'</div>'}
-const tile=(t,c='')=>`<div class="t ${c}">${pips(t[0])}${pips(t[1])}</div>`;
-const cur=()=>S.turn, mine=()=>S.phase=='play'&&cur()==id;
+// ---------- daş çəkilişi (SVG) ----------
+const G=[7.5,15,22.5],PT=[[],[4],[0,8],[0,4,8],[0,2,6,8],[0,2,4,6,8],[0,2,3,5,6,8]];
+function tile(t,vert,cls=''){
+  const w=vert?30:60,h=vert?60:30;
+  let s=`<svg class="t ${vert?'v':''} ${cls}" viewBox="0 0 ${w} ${h}"><rect x=".8" y=".8" width="${w-1.6}" height="${h-1.6}" rx="5" fill="#f7f1de" stroke="#7a6a45" stroke-width="1.2"/>`;
+  s+=vert?'<line x1="5" y1="30" x2="25" y2="30" stroke="#7a6a45" stroke-width="1.4"/>':'<line x1="30" y1="5" x2="30" y2="25" stroke="#7a6a45" stroke-width="1.4"/>';
+  [0,1].forEach(q=>PT[t[q]].forEach(k=>{const x=G[k%3],y=G[k/3|0];s+=`<circle cx="${vert?x:x+q*30}" cy="${vert?y+q*30:y}" r="3.2" fill="#1a1a1a"/>`}));
+  return s+'</svg>';
+}
+function knock(big){try{AC=AC||new AudioContext();const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type='triangle';
+  o.frequency.setValueAtTime(big?110:190,t);o.frequency.exponentialRampToValueAtTime(50,t+.12);g.gain.setValueAtTime(big?.9:.5,t);g.gain.exponentialRampToValueAtTime(.001,t+.16);
+  o.connect(g);g.connect(AC.destination);o.start();o.stop(t+.17)}catch{}}
+function banner(t){const b=$('#banner');b.textContent=t;b.classList.remove('show');void b.offsetWidth;b.classList.add('show')}
+function shuffleAnim(){$('#shw').innerHTML=Array.from({length:14},()=>`<div class=sb style="--x:${rnd(70)}px;--y:${rnd(35)}px;--r:${rnd(40)}deg"></div>`).join('');
+  $('#shuf').classList.add('show');setTimeout(()=>$('#shuf').classList.remove('show'),1500)}
+function floatEmoji(pid,t){const s=seats[pid];if(!s)return;const e=document.createElement('div');e.className='fl';e.textContent=t;s.append(e);setTimeout(()=>e.remove(),2000)}
+// ---------- oyun ----------
+const cur=()=>S.turn,mine=()=>S.phase=='play'&&cur()==id;
 const e2=()=>[S.board[0][0],S.board[S.board.length-1][1]];
 const canPlay=t=>!S.board.length?(!S.must||(S.must[0]==t[0]&&S.must[1]==t[1])):t.includes(e2()[0])||t.includes(e2()[1]);
 function clickTile(t){
@@ -65,53 +100,68 @@ function clickTile(t){
   if(L&&R&&e[0]!=e[1]){sel=t;render()}else{sel=null;send({type:'play',t,side:R?'R':'L'})}
 }
 function play(side){send({type:'play',t:sel,side});sel=null}
-// ---------- render ----------
 function render(){
   $('#lobby').style.display='none';$('#game').style.display='grid';
+  if(S.round!==lastRound){lastRound=S.round;prevB=[];if(S.phase!='lobby'){shuffleAnim();dealAnim=true}}
+  const en=S.ev?S.ev.n:0;if(lastEv===undefined)lastEv=en;else if(en!==lastEv){lastEv=en;banner(S.ev.text)}
+  const team=S.mode=='team',host=S.host==id,B=$('#board'),C=$('#ctl'),H=$('#hand'),ST=$('#status'),hand=S.hand;
   S.players.forEach(p=>{let s=seats[p.id];
-    if(!s){s=seats[p.id]=document.createElement('div');s.append(vid(p.id));s.append(document.createElement('div'));$('#seats').append(s)}
-    s.className='seat'+(S.phase=='play'&&cur()==p.id?' turn':'');
-    s.lastChild.innerHTML=`<b>${esc(p.name)}</b>${p.id==S.host?' 👑':''}${p.on?'':' ⚠'}<br>${p.score} xal · ${p.n} daş`});
+    if(!s){s=seats[p.id]=document.createElement('div');s.lb=document.createElement('div');s.append(vid(p.id),s.lb);$('#seats').append(s)}
+    s.className='seat'+(team?(p.u?' tB':' tA'):'')+(S.phase=='play'&&cur()==p.id?' turn':'');
+    s.lb.innerHTML=`<b>${esc(p.name)}</b>${p.id==S.host?' 👑':''}${p.on?'':' ⚠'}${team?' · '+(p.u?'B':'A'):''}<br>${p.score} xal · ${p.n} daş`});
+  const ord=S.players.map(p=>p.id).join();
+  if(ord!==window.lo){window.lo=ord;S.players.forEach(p=>{$('#seats').append(seats[p.id]);const v=vids[p.id];v&&v.play().catch(()=>{})})}
   if(local)S.players.forEach(p=>p.id!=id&&pc(p.id));
-  $('#top').innerHTML=`Otaq kodu: <b style="font-size:20px">${esc(S.room)}</b> · ${S.mode=='101'?'101 xal':'Klassik (1 raund)'}${S.manual?' · əl ilə seçim':''}${S.bank?` · <b>Bank: ${S.bank}</b>`:''}`;
-  const host=S.host==id,B=$('#board'),C=$('#ctl'),H=$('#hand'),ST=$('#status');
+  $('#top').innerHTML=`Otaq: <b style="font-size:20px">${esc(S.room)}</b> · ${MODES[S.mode]}${S.bank?` · <b>Bank: ${S.bank}</b>`:''}`;
   B.innerHTML='';C.innerHTML='';
-  const hand=S.hand;
   if(S.phase=='lobby'){
-    ST.textContent=`Oyunçular: ${S.players.length}/4 — kodu dostlarına göndər.`;
-    if(host)C.innerHTML=`<select onchange="send({type:'opts',mode:this.value,manual:S.manual})"><option value="101" ${S.mode=='101'?'selected':''}>101 xal</option><option value="classic" ${S.mode=='classic'?'selected':''}>Klassik (1 raund)</option></select>
-    <label><input type=checkbox ${S.manual?'checked':''} onchange="send({type:'opts',mode:S.mode,manual:this.checked})"> Daşları əl ilə seç</label>
-    <button onclick="send({type:'start'})" ${S.players.length<2?'disabled':''}>Başla</button>`;
-    else ST.textContent+=' Host oyunu başladacaq.';
+    ST.textContent=`Oyunçular: ${S.players.length}/4 — kodu dostlarına göndər.`+(team?' Oturacaq seç: 1 ilə 3, 2 ilə 4 cütdür və qarşı-qarşıya otururlar.':'')+(host?'':' Host oyunu başladacaq.');
+    if(team){const ps=[[1,2],[2,3],[3,2],[2,1]];
+      B.innerHTML='<div class=tbl>'+[0,1,2,3].map(i=>{const q=S.players.find(p=>p.seat==i);return `<div class="sl ${i%2?'B':'A'} ${q&&q.id==id?'me':''}" style="grid-area:${ps[i][0]}/${ps[i][1]}" onclick="send({type:'seat',s:${i}})">${i+1}. ${q?esc(q.name):'boş — otur'}<br><small>${i%2?'B':'A'} komandası</small></div>`}).join('')+'<div style="grid-area:2/2;display:grid;place-items:center">🁢</div></div>'}
+    if(host)C.innerHTML=`<select onchange="send({type:'opts',mode:this.value})">${Object.keys(MODES).map(k=>`<option value="${k}" ${S.mode==k?'selected':''}>${MODES[k]}</option>`).join('')}</select>
+    <button onclick="send({type:'start'})" ${S.players.length<2||(team&&S.players.length!=4)?'disabled':''}>Başla</button>`;
   }else if(S.phase=='pick'){
     ST.textContent=`Daşlarını seç: ${hand.length}/7`+(hand.length>=7?' — digərləri gözlənilir':'');
-    for(let i=0;i<S.pool;i++){const d=document.createElement('div');d.className='t back';d.onclick=()=>send({type:'pick',i});B.append(d)}
+    for(let i=0;i<S.pool;i++){const d=document.createElement('div');d.className='back';d.onclick=()=>send({type:'pick',i});B.append(d)}
   }else{
-    B.innerHTML=S.board.map(t=>tile(t,t[0]==t[1]?'d':'')).join('');
+    B.innerHTML=S.board.map(t=>tile(t,t[0]==t[1])).join('');
+    if(S.board.length==prevB.length+1){
+      const i=prevB.length&&JSON.stringify(S.board[0])==JSON.stringify(prevB[0])?S.board.length-1:0,t=S.board[i],dbl=t[0]==t[1];
+      B.children[i].classList.add(dbl?'slam':'drop');knock(dbl);
+      if(dbl){B.classList.remove('shake');void B.offsetWidth;B.classList.add('shake')}
+    }
+    prevB=S.board;
     if(S.phase=='play'){
       const p=S.players.find(x=>x.id==cur());
-      ST.textContent=(mine()?'Sənin növbən':p.name+' oynayır')+` · bazar: ${S.stock}`+(S.must&&!S.board.length?' · başlanğıc daş seçilib':'');
+      ST.textContent=(mine()?'Sənin növbən':p.name+' oynayır')+(S.stock?` · bazar: ${S.stock}`:'')+(S.must&&!S.board.length?' · başlanğıc daşı oyna':'');
       if(mine()&&S.board.length&&!hand.some(canPlay)&&S.stock>0)C.innerHTML='<button onclick="send({type:\'draw\'})">Bazardan çək</button>';
       if(sel&&mine())C.innerHTML='<button onclick="play(\'L\')">◀ Sol</button><button onclick="play(\'R\')">Sağ ▶</button>';
     }else{
-      const r=S.result,nm=i=>esc((S.players.find(p=>p.id==i)||{}).name);
-      let w=r.winner?nm(r.winner):'Heç kim (bərabər)';
-      if(r.over&&S.mode=='101'){const b=[...S.players].sort((a,b)=>b.score-a.score)[0];w=esc(b.name)}
-      ST.innerHTML=(r.over?'🏆 Oyun bitdi, qalib: ':'Raundu qazandı: ')+'<b>'+w+'</b>'+(r.winner?` (+${r.pts} xal)`:` — bərabərlik, xallar banka keçdi (bank: ${S.bank})`)+
-        '<br>'+S.players.map(p=>nm(p.id)+': '+(r.hands[p.id].map(t=>t[0]+'|'+t[1]).join(' ')||'—')).join(' · ');
+      const r=S.result,nm=i=>esc(S.players.find(p=>p.id==i).name);
+      let h=r.fish?'Oyun bloklandı. ':(r.winner?'🏁 '+nm(r.winner)+' daşlarını bitirdi. ':'');
+      h+=r.pts?`<b>${esc(r.wn)}</b> +${r.pts} xal. `:`Bərabərlik, xallar banka keçdi (bank: ${S.bank}). `;
+      if(r.over)h+='🏆 Oyunu qazanan: <b>'+r.best.map(nm).join(', ')+'</b>';
+      ST.innerHTML=h+'<br>'+S.players.map(p=>nm(p.id)+': '+(r.hands[p.id].map(t=>t[0]+'|'+t[1]).join(' ')||'—')).join(' · ');
       if(host)C.innerHTML=r.over?'<button onclick="send({type:\'again\'})">Yenidən</button>':'<button onclick="send({type:\'next\'})">Növbəti raund</button>';
     }
   }
-  H.innerHTML=hand.map(t=>tile(t)).join('');
-  [...H.children].forEach((el,i)=>{if(mine()&&canPlay(hand[i]))el.classList.add('ok');el.onclick=()=>clickTile(hand[i])});
+  H.innerHTML=hand.map(t=>tile(t,false)).join('');
+  [...H.children].forEach((el,i)=>{if(mine()&&canPlay(hand[i]))el.classList.add('ok');el.onclick=()=>clickTile(hand[i]);
+    if(dealAnim){el.classList.add('deal');el.style.animationDelay=(1500+i*70)+'ms'}});
+  if(dealAnim&&hand.length)dealAnim=false;
 }
-// ---------- voice / video (WebRTC mesh) ----------
+// ---------- səs / video (ayrı düymələr) ----------
 function vid(pid){if(vids[pid])return vids[pid];const v=document.createElement('video');v.autoplay=true;v.playsInline=true;if(pid==id)v.muted=true;return vids[pid]=v}
-async function media(){
-  try{local=await navigator.mediaDevices.getUserMedia({audio:true,video:true})}
-  catch{try{local=await navigator.mediaDevices.getUserMedia({audio:true})}catch{return alert('Mikrofon/kamera icazəsi verilmədi')}}
-  vid(id).srcObject=local;$('#mic').disabled=true;
-  S.players.forEach(p=>p.id!=id&&pc(p.id));
+async function tog(kind){
+  const k=kind=='a'?'audio':'video',b=$(kind=='a'?'#mic':'#cam');
+  let tr=local&&local.getTracks().find(t=>t.kind==k);
+  if(!tr){
+    try{tr=(await navigator.mediaDevices.getUserMedia({[k]:true})).getTracks()[0]}catch{return alert('İcazə verilmədi')}
+    local=local||new MediaStream();const old=Object.values(pcs);
+    local.addTrack(tr);old.forEach(o=>o.c.addTrack(tr,local));vid(id).srcObject=local;
+    S.players.forEach(p=>p.id!=id&&pc(p.id));
+  }else tr.enabled=!tr.enabled;
+  b.textContent=(kind=='a'?'🎤 ':'📷 ')+(tr.enabled?'Bağla':'Aç');b.classList.toggle('on',tr.enabled);
 }
 function pc(pid){
   if(pcs[pid])return pcs[pid];
