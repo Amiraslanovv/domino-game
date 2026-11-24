@@ -36,10 +36,10 @@ function startRound(R) {
 }
 function begin(R) {
   R.phase = 'play';
-  if (R.first) {   // ilk raund: ən kiçik qoşa daş olan başlayır
+  if (R.first) {   // ilk raund: 1|1 qoşası olan başlayır
     let b = 1e9;
     R.players.forEach((p, i) => p.hand.forEach(t => {
-      const k = t[0] == t[1] ? t[0] : 100 + t[0] + t[1];
+      const k = t[0] == t[1] ? (t[0] ? t[0] : 50) : 100 + t[0] + t[1];   // 1|1 birinci, ağ qoşa (0|0) sonuncu
       if (k < b) { b = k; R.must = t; R.ti = i; }
     }));
     R.first = false;
