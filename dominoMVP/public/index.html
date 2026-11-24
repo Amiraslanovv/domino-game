@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="az"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Domino</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:#0d3b2e;color:#eee}
+button,input,select{font:inherit;padding:8px 12px;border-radius:8px;border:0}
+button{background:#e8b923;color:#222;cursor:pointer;font-weight:600}button:disabled{opacity:.4}
+#lobby{max-width:360px;margin:15vh auto;display:grid;gap:10px;padding:16px}
+#game{display:none;height:100vh;grid-template-columns:1fr 280px}
+#main{display:flex;flex-direction:column;padding:8px;gap:8px;overflow:auto}
+#side{display:flex;flex-direction:column;gap:6px;background:#0a2a21;padding:8px;min-height:0}
+#chat{flex:1;overflow:auto;font-size:14px}#chat b{color:#e8b923}
+.seats{display:flex;gap:8px;flex-wrap:wrap}
+.seat{background:#0a2a21;border-radius:10px;padding:6px;width:150px;text-align:center;border:2px solid transparent;font-size:13px}
+.seat.turn{border-color:#e8b923}
+.seat video{width:100%;height:90px;object-fit:cover;background:#000;border-radius:6px}
+#board{flex:1;min-height:140px;display:flex;flex-wrap:wrap;align-content:flex-start;gap:3px;background:#116149;border-radius:12px;padding:10px;overflow:auto;align-items:center}
+.t{display:inline-flex;background:#f6f1e3;border-radius:6px;border:1px solid #666}
+.h{width:30px;height:30px;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:3px}
+.h i{border-radius:50%}.h i.on{background:#222}
+.t .h:first-child{border-right:2px solid #555}
+.t.d{flex-direction:column}.t.d .h:first-child{border-right:0;border-bottom:2px solid #555}
+.t.back{width:44px;height:30px;background:#2a6;cursor:pointer}
+#hand{display:flex;gap:6px;flex-wrap:wrap;min-height:64px}
+#hand .t{cursor:pointer;opacity:.55}#hand .t.ok{opacity:1;outline:3px solid #e8b923}
+#ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+@media(max-width:800px){#game{grid-template-columns:1fr;height:auto}#side{height:240px}.seat{width:calc(50% - 4px);font-size:12px}.seat video{height:70px}.h{width:24px;height:24px;padding:2px}.t.back{width:36px;height:24px}#board{min-height:110px}#hand{position:sticky;bottom:0;background:#0d3b2e;padding:6px 0;z-index:5}#lobby{margin:8vh auto}button,input,select{min-height:42px}}
+</style></head><body>
+<div id="lobby"><h2>🁢 Domino</h2>
+<input id="name" placeholder="Adın"><input id="room" placeholder="Otaq kodu (boş = yeni otaq)">
+<button onclick="join()">Daxil ol</button></div>
+<div id="game"><div id="main">
+<div id="top"></div><div class="seats" id="seats"></div><div id="status"></div>
+<div id="board"></div><div id="ctl"></div><div id="hand"></div></div>
+<div id="side"><button id="mic" onclick="media()">🎤📷 Səs/Video aç</button><div id="chat"></div>
+<input id="msg" placeholder="Mesaj yaz..." onkeydown="if(event.key=='Enter'&&this.value){send({type:'chat',text:this.value});this.value=''}"></div></div>
+<script>
+const $=s=>document.querySelector(s), esc=s=>String(s).replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
+const id=sessionStorage.id||(sessionStorage.id=Math.random().toString(36).slice(2,10));
+$('#name').value=localStorage.nm||'';
+let ws,S,sel=null,local=null;const pcs={},vids={},seats={};
+const send=o=>ws.send(JSON.stringify(o));
+function join(){
+  const name=$('#name').value.trim()||'Oyunçu',room=($('#room').value.trim()||Math.random().toString(36).slice(2,6)).toUpperCase();
+  localStorage.nm=name;
+  ws=new WebSocket((location.protocol=='https:'?'wss://':'ws://')+location.host);
+  ws.onopen=()=>send({type:'join',room,id,name});
+  ws.onmessage=e=>{const d=JSON.parse(e.data);
+    if(d.type=='state'){S=d;render()}
+    else if(d.type=='chat'){const p=document.createElement('div');p.innerHTML='<b>'+esc(d.name)+':</b> ';p.append(document.createTextNode(d.text));$('#chat').append(p);$('#chat').scrollTop=1e9}
+    else if(d.type=='rtc')rtc(d.from,d.data);
+    else if(d.type=='err'){alert(d.m);location.reload()}};
+  ws.onclose=()=>setTimeout(()=>S&&join(),1500);
+}
+// ---------- tiles ----------
+function pips(n){const m=[[],[4],[0,8],[0,4,8],[0,2,6,8],[0,2,4,6,8],[0,2,3,5,6,8]][n];
+  return '<div class=h>'+[...Array(9).keys()].map(k=>'<i class="'+(m.includes(k)?'on':'')+'"></i>').join('')+'</div>'}
+const tile=(t,c='')=>`<div class="t ${c}">${pips(t[0])}${pips(t[1])}</div>`;
+const cur=()=>S.turn, mine=()=>S.phase=='play'&&cur()==id;
+const e2=()=>[S.board[0][0],S.board[S.board.length-1][1]];
+const canPlay=t=>!S.board.length?(!S.must||(S.must[0]==t[0]&&S.must[1]==t[1])):t.includes(e2()[0])||t.includes(e2()[1]);
+function clickTile(t){
+  if(!mine()||!canPlay(t))return;
+  if(!S.board.length)return send({type:'play',t,side:'R'});
+  const e=e2(),L=t.includes(e[0]),R=t.includes(e[1]);
+  if(L&&R&&e[0]!=e[1]){sel=t;render()}else{sel=null;send({type:'play',t,side:R?'R':'L'})}
+}
+function play(side){send({type:'play',t:sel,side});sel=null}
+// ---------- render ----------
+function render(){
+  $('#lobby').style.display='none';$('#game').style.display='grid';
+  S.players.forEach(p=>{let s=seats[p.id];
+    if(!s){s=seats[p.id]=document.createElement('div');s.append(vid(p.id));s.append(document.createElement('div'));$('#seats').append(s)}
+    s.className='seat'+(S.phase=='play'&&cur()==p.id?' turn':'');
+    s.lastChild.innerHTML=`<b>${esc(p.name)}</b>${p.id==S.host?' 👑':''}${p.on?'':' ⚠'}<br>${p.score} xal · ${p.n} daş`});
+  if(local)S.players.forEach(p=>p.id!=id&&pc(p.id));
+  $('#top').innerHTML=`Otaq kodu: <b style="font-size:20px">${esc(S.room)}</b> · ${S.mode=='101'?'101 xal':'Klassik (1 raund)'}${S.manual?' · əl ilə seçim':''}${S.bank?` · <b>Bank: ${S.bank}</b>`:''}`;
+  const host=S.host==id,B=$('#board'),C=$('#ctl'),H=$('#hand'),ST=$('#status');
+  B.innerHTML='';C.innerHTML='';
+  const hand=S.hand;
+  if(S.phase=='lobby'){
+    ST.textContent=`Oyunçular: ${S.players.length}/4 — kodu dostlarına göndər.`;
+    if(host)C.innerHTML=`<select onchange="send({type:'opts',mode:this.value,manual:S.manual})"><option value="101" ${S.mode=='101'?'selected':''}>101 xal</option><option value="classic" ${S.mode=='classic'?'selected':''}>Klassik (1 raund)</option></select>
+    <label><input type=checkbox ${S.manual?'checked':''} onchange="send({type:'opts',mode:S.mode,manual:this.checked})"> Daşları əl ilə seç</label>
+    <button onclick="send({type:'start'})" ${S.players.length<2?'disabled':''}>Başla</button>`;
+    else ST.textContent+=' Host oyunu başladacaq.';
+  }else if(S.phase=='pick'){
+    ST.textContent=`Daşlarını seç: ${hand.length}/7`+(hand.length>=7?' — digərləri gözlənilir':'');
+    for(let i=0;i<S.pool;i++){const d=document.createElement('div');d.className='t back';d.onclick=()=>send({type:'pick',i});B.append(d)}
+  }else{
+    B.innerHTML=S.board.map(t=>tile(t,t[0]==t[1]?'d':'')).join('');
+    if(S.phase=='play'){
+      const p=S.players.find(x=>x.id==cur());
+      ST.textContent=(mine()?'Sənin növbən':p.name+' oynayır')+` · bazar: ${S.stock}`+(S.must&&!S.board.length?' · başlanğıc daş seçilib':'');
+      if(mine()&&S.board.length&&!hand.some(canPlay)&&S.stock>0)C.innerHTML='<button onclick="send({type:\'draw\'})">Bazardan çək</button>';
+      if(sel&&mine())C.innerHTML='<button onclick="play(\'L\')">◀ Sol</button><button onclick="play(\'R\')">Sağ ▶</button>';
+    }else{
+      const r=S.result,nm=i=>esc((S.players.find(p=>p.id==i)||{}).name);
+      let w=r.winner?nm(r.winner):'Heç kim (bərabər)';
+      if(r.over&&S.mode=='101'){const b=[...S.players].sort((a,b)=>b.score-a.score)[0];w=esc(b.name)}
+      ST.innerHTML=(r.over?'🏆 Oyun bitdi, qalib: ':'Raundu qazandı: ')+'<b>'+w+'</b>'+(r.winner?` (+${r.pts} xal)`:` — bərabərlik, xallar banka keçdi (bank: ${S.bank})`)+
+        '<br>'+S.players.map(p=>nm(p.id)+': '+(r.hands[p.id].map(t=>t[0]+'|'+t[1]).join(' ')||'—')).join(' · ');
+      if(host)C.innerHTML=r.over?'<button onclick="send({type:\'again\'})">Yenidən</button>':'<button onclick="send({type:\'next\'})">Növbəti raund</button>';
+    }
+  }
+  H.innerHTML=hand.map(t=>tile(t)).join('');
+  [...H.children].forEach((el,i)=>{if(mine()&&canPlay(hand[i]))el.classList.add('ok');el.onclick=()=>clickTile(hand[i])});
+}
+// ---------- voice / video (WebRTC mesh) ----------
+function vid(pid){if(vids[pid])return vids[pid];const v=document.createElement('video');v.autoplay=true;v.playsInline=true;if(pid==id)v.muted=true;return vids[pid]=v}
+async function media(){
+  try{local=await navigator.mediaDevices.getUserMedia({audio:true,video:true})}
+  catch{try{local=await navigator.mediaDevices.getUserMedia({audio:true})}catch{return alert('Mikrofon/kamera icazəsi verilmədi')}}
+  vid(id).srcObject=local;$('#mic').disabled=true;
+  S.players.forEach(p=>p.id!=id&&pc(p.id));
+}
+function pc(pid){
+  if(pcs[pid])return pcs[pid];
+  const c=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]}),o=pcs[pid]={c,making:false,polite:id>pid};
+  c.onicecandidate=e=>e.candidate&&send({type:'rtc',to:pid,data:{ice:e.candidate}});
+  c.onnegotiationneeded=async()=>{try{o.making=true;await c.setLocalDescription();send({type:'rtc',to:pid,data:{sdp:c.localDescription}})}finally{o.making=false}};
+  c.ontrack=e=>{const v=vid(pid);v.srcObject=e.streams[0];v.play().catch(()=>{})};
+  if(local)local.getTracks().forEach(t=>c.addTrack(t,local));
+  return o;
+}
+async function rtc(from,d){
+  const o=pc(from),c=o.c;
+  try{
+    if(d.sdp){
+      const clash=d.sdp.type=='offer'&&(o.making||c.signalingState!='stable');
+      o.ignore=!o.polite&&clash;if(o.ignore)return;
+      await c.setRemoteDescription(d.sdp);
+      if(d.sdp.type=='offer'){await c.setLocalDescription();send({type:'rtc',to:from,data:{sdp:c.localDescription}})}
+    }else if(d.ice){try{await c.addIceCandidate(d.ice)}catch(e){if(!o.ignore)throw e}}
+  }catch(e){console.log(e)}
+}
+</script></body></html>
